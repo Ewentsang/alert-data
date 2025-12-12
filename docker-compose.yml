@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: alert_db
       TZ: Asia/Shanghai  # 设置时区为北京时间
     ports:
-      - "5432:5432"
+      - "5436:5432"
     volumes:
       # 持久化数据库数据
       - postgres_data:/var/lib/postgresql/data
@@ -32,7 +32,7 @@ services:
       dockerfile: Dockerfile
     container_name: alert_backend
     ports:
-      - "8000:8000"
+      - "8088:8000"
     # 挂载代码目录，实现代码热更新
     volumes:
       - .:/app

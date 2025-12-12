@@ -43,5 +43,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # 启动命令（使用 --reload 实现代码热更新，生产环境建议去掉）
+# 注意：容器内部仍使用 8000 端口，外部通过 docker-compose 映射到 8088
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 

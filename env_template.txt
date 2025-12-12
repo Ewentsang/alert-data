@@ -1,0 +1,38 @@
+# 数据库配置
+# Docker 环境会自动使用 PostgreSQL，无需配置
+# 本地开发可以使用 SQLite 或 PostgreSQL
+
+# SQLite (本地开发，默认)
+# DATABASE_URL=sqlite:///./alert_database.db
+
+# PostgreSQL (本地开发，如果需要)
+# DATABASE_URL=postgresql://alert_user:alert_password@localhost:5432/alert_db
+
+# Docker 环境会自动使用以下连接（无需手动配置）
+# DATABASE_URL=postgresql://alert_user:alert_password@postgres:5432/alert_db
+
+# Dify Workflow API 配置
+# Dify API 基础 URL（例如：http://203.118.55.60 或 https://api.dify.ai）
+DIFY_BASE_URL=http://203.118.55.60
+
+# Dify API Key (Bearer Token) - 必需
+DIFY_API_KEY=your_api_key_here
+
+# Dify User ID (可选，默认值：alert-system)
+DIFY_USER_ID=alert-system
+
+# 接收告警数据的 Dify workflow webhook（可选，用于记录）
+# 格式：{DIFY_BASE_URL}/v1/workflows/run
+DIFY_WEBHOOK_URL=http://203.118.55.60/v1/workflows/run
+
+# 20分钟超时后触发的 Dify workflow webhook（必需）
+# 格式：{DIFY_BASE_URL}/v1/workflows/run
+DIFY_WEBHOOK_URL_TIMEOUT=http://203.118.55.60/v1/workflows/run
+
+# 超时时间配置（分钟，支持小数，例如 0.167 表示 10 秒）
+# 10秒 = 0.167分钟, 20分钟 = 20, 25分钟 = 25
+ALERT_TIMEOUT_MINUTES=25
+
+# 检查间隔（秒）
+CHECK_INTERVAL_SECONDS=60
+

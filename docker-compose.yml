@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库服务
+  postgres:
+    image: postgres:15-alpine
+    container_name: alert_postgres
+    environment:
+      POSTGRES_USER: alert_user
+      POSTGRES_PASSWORD: alert_password
+      POSTGRES_DB: alert_db
+      TZ: Asia/Shanghai  # 设置时区为北京时间
+    ports:
+      - "5432:5432"
+    volumes:
+      # 持久化数据库数据
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alert_user -d alert_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - alert_network
+
+  # 后端服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alert_backend
+    ports:
+      - "8000:8000"
+    # 挂载代码目录，实现代码热更新
+    volumes:
+      - .:/app
+      # 使用匿名卷排除不需要同步的目录（保持容器内的数据）
+      - /app/__pycache__
+      - /app/.git
+      - /app/data
+      - /app/*.db
+      - /app/*.log
+    # 环境变量文件（如果不存在会有警告，但不影响运行）
+    env_file:
+      - .env
+    environment:
+      # PostgreSQL 连接字符串
+      - DATABASE_URL=postgresql://alert_user:alert_password@postgres:5432/alert_db
+      # 其他环境变量可以从 .env 文件读取，或在 docker-compose.yml 中设置
+      - ALERT_TIMEOUT_MINUTES=25  # 25分钟
+      - CHECK_INTERVAL_SECONDS=60  # 60秒检查一次
+      - TZ=Asia/Shanghai  # 设置时区为北京时间
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - alert_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  alert_network:
+    driver: bridge
+

@@ -524,16 +524,21 @@ async def delete_old_alerts():
         logger.info(f"[定时删除] 删除时间范围: < {today_start.strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info(f"[定时删除] 保留时间窗口: {yesterday_23_35.strftime('%Y-%m-%d %H:%M:%S')} ~ {today_start.strftime('%Y-%m-%d %H:%M:%S')}")
         
+        # 将 aware datetime 转换为 naive datetime（移除时区信息）用于数据库比较
+        # 因为数据库中的 datetime 字段是 naive 的，存储的是北京时间
+        today_start_naive = today_start.replace(tzinfo=None) if today_start.tzinfo else today_start
+        yesterday_23_35_naive = yesterday_23_35.replace(tzinfo=None) if yesterday_23_35.tzinfo else yesterday_23_35
+        
         # 统计：查询所有需要删除的记录（用于日志）
         all_to_delete = db.query(Alert).filter(
-            Alert.time < today_start
+            Alert.time < today_start_naive
         ).all()
         
         # 统计：查询保留的记录
         kept_records = db.query(Alert).filter(
             and_(
-                Alert.time >= yesterday_23_35,
-                Alert.time < today_start,
+                Alert.time >= yesterday_23_35_naive,
+                Alert.time < today_start_naive,
                 Alert.timeout_triggered == False,
                 Alert.processed == False
             )
@@ -552,10 +557,10 @@ async def delete_old_alerts():
         }
         
         for alert in all_to_delete:
-            # 检查是否应该保留
+            # 检查是否应该保留（使用 naive datetime 比较）
             should_keep = (
-                alert.time >= yesterday_23_35
-                and alert.time < today_start
+                alert.time >= yesterday_23_35_naive
+                and alert.time < today_start_naive
                 and alert.timeout_triggered == False
                 and alert.processed == False
             )
@@ -576,17 +581,17 @@ async def delete_old_alerts():
             else:
                 kept_by_type["其他"] += 1
         
-        # 执行删除
+        # 执行删除（使用 naive datetime）
         # 删除条件1：所有前几天的数据 + 昨天23:35之前的数据
         deleted_count_1 = db.query(Alert).filter(
-            Alert.time < yesterday_23_35
+            Alert.time < yesterday_23_35_naive
         ).delete(synchronize_session=False)
         
         # 删除条件2：昨天23:35-23:59:59之间，但已处理或已超时的数据
         deleted_count_2 = db.query(Alert).filter(
             and_(
-                Alert.time >= yesterday_23_35,
-                Alert.time < today_start,
+                Alert.time >= yesterday_23_35_naive,
+                Alert.time < today_start_naive,
                 or_(Alert.timeout_triggered == True, Alert.processed == True)
             )
         ).delete(synchronize_session=False)
